@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chemical Inventory</title>
+    <style>
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th,
+      td {
+        padding: 10px;
+        border: 1px solid #ddd;
+        text-align: left;
+      }
+      th {
+        cursor: pointer;
+      }
+      .toolbar {
+        margin-bottom: 20px;
+        text-align: end;
+      }
+      .toolbar button {
+        margin-right: 10px;
+      }
+      #editModal {
+        display: none;
+        position: fixed;
+        top: 20%;
+        left: 50%;
+        transform: translate(-50%, -20%);
+        padding: 20px;
+        border: 1px solid #ddd;
+        background-color: white;
+      }
+
+      /* CSS */
+      button {
+        background-color: #e1ecf4;
+        border-radius: 3px;
+        border: 1px solid #7aa7c7;
+        box-shadow: rgba(255, 255, 255, 0.7) 0 1px 0 0 inset;
+        box-sizing: border-box;
+        color: #39739d;
+        cursor: pointer;
+        display: inline-block;
+        font-family: -apple-system, system-ui, "Segoe UI", "Liberation Sans",
+          sans-serif;
+        font-size: 13px;
+        font-weight: 400;
+        line-height: 1.15385;
+        margin: 0;
+        outline: none;
+        padding: 8px 0.8em;
+        position: relative;
+        text-align: center;
+        text-decoration: none;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+        vertical-align: baseline;
+        white-space: nowrap;
+      }
+
+      button:hover,
+      button:focus {
+        background-color: #b3d3ea;
+        color: #2c5777;
+      }
+
+      button:focus {
+        box-shadow: 0 0 0 4px rgba(0, 149, 255, 0.15);
+      }
+
+      button:active {
+        background-color: #a0c7e4;
+        box-shadow: none;
+        color: #2c5777;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="toolbar">
+      <button onclick="addRow()">Add Row</button>
+      <button onclick="moveRowUp()">Move Up</button>
+      <button onclick="moveRowDown()">Move Down</button>
+      <button onclick="deleteRow()">Delete Row</button>
+      <button onclick="refreshData()">Refresh</button>
+      <button onclick="saveData()">Save Data</button>
+    </div>
+
+    <table id="chemicalTable">
+      <thead>
+        <tr>
+          <th>Select</th>
+          <th onclick="sortTable('id')">ID</th>
+          <th onclick="sortTable('chemicalName')">Chemical Name</th>
+          <th onclick="sortTable('vender')">Vender</th>
+          <th onclick="sortTable('density')">Density</th>
+          <th onclick="sortTable('viscosity')">Viscosity</th>
+          <th onclick="sortTable('packaging')">Packaging</th>
+          <th onclick="sortTable('packSize')">Pack Size</th>
+          <th onclick="sortTable('unit')">Unit</th>
+          <th onclick="sortTable('quantity')">Quantity</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+
+    <div id="editModal">
+      <h3>Edit Row</h3>
+      <input type="hidden" id="editRowIndex" />
+      <label for="chemicalName">Chemical Name:</label>
+      <input type="text" id="chemicalName" /><br /><br />
+      <label for="vender">Vender:</label>
+      <input type="text" id="vender" /><br /><br />
+      <label for="density">Density:</label>
+      <input type="text" id="density" /><br /><br />
+      <label for="viscosity">Viscosity:</label>
+      <input type="text" id="viscosity" /><br /><br />
+      <label for="packaging">Packaging:</label>
+      <input type="text" id="packaging" /><br /><br />
+      <label for="packSize">Pack Size:</label>
+      <input type="text" id="packSize" /><br /><br />
+      <label for="unit">Unit:</label>
+      <input type="text" id="unit" /><br /><br />
+      <label for="quantity">Quantity:</label>
+      <input type="text" id="quantity" /><br /><br />
+      <button onclick="saveEdit()">Save</button>
+      <button onclick="closeModal()">Close</button>
+    </div>
+
+    <script>
+      let originalData = [
+        {
+          id: 1,
+          chemicalName: "Hydrogen Peroxide",
+          vender: "ABC Corp",
+          density: "1.1",
+          viscosity: "0.95",
+          packaging: "Bottle",
+          packSize: "500",
+          unit: "ml",
+          quantity: 100,
+        },
+        {
+          id: 2,
+          chemicalName: "Acetone",
+          vender: "XYZ Ltd",
+          density: "0.79",
+          viscosity: "0.32",
+          packaging: "Can",
+          packSize: "1",
+          unit: "L",
+          quantity: 50,
+        },
+        {
+          id: 3,
+          chemicalName: "Sulfuric Acid",
+          vender: "ChemCorp",
+          density: "1.84",
+          viscosity: "26",
+          packaging: "Drum",
+          packSize: "20",
+          unit: "L",
+          quantity: 10,
+        },
+        {
+          id: 4,
+          chemicalName: "Ethanol",
+          vender: "XYZ Ltd",
+          density: "0.79",
+          viscosity: "1.2",
+          packaging: "Bottle",
+          packSize: "2",
+          unit: "L",
+          quantity: 75,
+        },
+        {
+          id: 5,
+          chemicalName: "Methanol",
+          vender: "ABC Corp",
+          density: "0.79",
+          viscosity: "0.59",
+          packaging: "Can",
+          packSize: "5",
+          unit: "L",
+          quantity: 30,
+        },
+        {
+          id: 6,
+          chemicalName: "Sodium Hydroxide",
+          vender: "ChemCorp",
+          density: "2.13",
+          viscosity: "20",
+          packaging: "Bag",
+          packSize: "25",
+          unit: "kg",
+          quantity: 40,
+        },
+        {
+          id: 7,
+          chemicalName: "Ammonium Chloride",
+          vender: "XYZ Ltd",
+          density: "1.52",
+          viscosity: "15",
+          packaging: "Bag",
+          packSize: "50",
+          unit: "kg",
+          quantity: 15,
+        },
+        {
+          id: 8,
+          chemicalName: "Benzene",
+          vender: "ABC Corp",
+          density: "0.87",
+          viscosity: "0.65",
+          packaging: "Bottle",
+          packSize: "500",
+          unit: "ml",
+          quantity: 90,
+        },
+        {
+          id: 9,
+          chemicalName: "Toluene",
+          vender: "ChemCorp",
+          density: "0.87",
+          viscosity: "0.59",
+          packaging: "Can",
+          packSize: "1",
+          unit: "L",
+          quantity: 20,
+        },
+        {
+          id: 10,
+          chemicalName: "Nitric Acid",
+          vender: "XYZ Ltd",
+          density: "1.5",
+          viscosity: "2.2",
+          packaging: "Drum",
+          packSize: "10",
+          unit: "L",
+          quantity: 5,
+        },
+      ];
+
+      let data = [...originalData];
+      let selectedRowIndex = null;
+      let currentSortColumn = null;
+      let currentSortDirection = "asc"; // Track sort direction (ascending or descending)
+
+      // Populate Table
+      function populateTable() {
+        const tableBody = document.getElementById("tableBody");
+        tableBody.innerHTML = "";
+        data.forEach((item, index) => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td><input type="radio" name="selectRow" onchange="selectRow(${index})" ${
+            selectedRowIndex === index ? "checked" : ""
+          }></td>
+            <td>${item.id}</td>
+            <td ondblclick="openEditModal(${index})">${item.chemicalName}</td>
+            <td>${item.vender}</td>
+            <td>${item.density}</td>
+            <td>${item.viscosity}</td>
+            <td>${item.packaging}</td>
+            <td>${item.packSize}</td>
+            <td>${item.unit}</td>
+            <td>${item.quantity}</td>
+        `;
+          tableBody.appendChild(row);
+        });
+      }
+
+      // Sort Table
+      function sortTable(column) {
+        // If the same column is clicked, toggle the sort direction
+        if (currentSortColumn === column) {
+          currentSortDirection =
+            currentSortDirection === "asc" ? "desc" : "asc";
+        } else {
+          currentSortDirection = "asc"; // Default sort direction is ascending for new column
+          currentSortColumn = column;
+        }
+
+        data.sort((a, b) => {
+          let valueA = a[column];
+          let valueB = b[column];
+
+          // If the value is a number, we parse it as a float for comparison
+          if (!isNaN(valueA) && !isNaN(valueB)) {
+            valueA = parseFloat(valueA);
+            valueB = parseFloat(valueB);
+          }
+
+          // Sort based on the direction
+          if (currentSortDirection === "asc") {
+            return valueA > valueB ? 1 : valueA < valueB ? -1 : 0;
+          } else {
+            return valueA < valueB ? 1 : valueA > valueB ? -1 : 0;
+          }
+        });
+
+        populateTable(); // Repopulate table after sorting
+      }
+
+      // Select Row
+      function selectRow(index) {
+        selectedRowIndex = index;
+      }
+
+      // Add Row
+      function addRow() {
+        const newRow = {
+          id: data.length + 1,
+          chemicalName: "",
+          vender: "",
+          density: "",
+          viscosity: "",
+          packaging: "",
+          packSize: "",
+          unit: "",
+          quantity: "",
+        };
+        data.push(newRow);
+        populateTable();
+      }
+
+      // Delete Row
+      function deleteRow() {
+        if (selectedRowIndex !== null) {
+          data.splice(selectedRowIndex, 1);
+          selectedRowIndex = null;
+          populateTable();
+        }
+      }
+
+      // Move Row Up
+      function moveRowUp() {
+        if (selectedRowIndex > 0) {
+          [data[selectedRowIndex - 1], data[selectedRowIndex]] = [
+            data[selectedRowIndex],
+            data[selectedRowIndex - 1],
+          ];
+          selectedRowIndex--;
+          populateTable();
+        }
+      }
+
+      // Move Row Down
+      function moveRowDown() {
+        if (selectedRowIndex < data.length - 1) {
+          [data[selectedRowIndex + 1], data[selectedRowIndex]] = [
+            data[selectedRowIndex],
+            data[selectedRowIndex + 1],
+          ];
+          selectedRowIndex++;
+          populateTable();
+        }
+      }
+
+      // Open Edit Modal
+      function openEditModal(rowIndex) {
+        document.getElementById("editRowIndex").value = rowIndex;
+        const item = data[rowIndex];
+        document.getElementById("chemicalName").value = item.chemicalName;
+        document.getElementById("vender").value = item.vender;
+        document.getElementById("density").value = item.density;
+        document.getElementById("viscosity").value = item.viscosity;
+        document.getElementById("packaging").value = item.packaging;
+        document.getElementById("packSize").value = item.packSize;
+        document.getElementById("unit").value = item.unit;
+        document.getElementById("quantity").value = item.quantity;
+        document.getElementById("editModal").style.display = "block";
+      }
+
+      // Save Edit
+      function saveEdit() {
+        const rowIndex = document.getElementById("editRowIndex").value;
+        data[rowIndex].chemicalName =
+          document.getElementById("chemicalName").value;
+        data[rowIndex].vender = document.getElementById("vender").value;
+        data[rowIndex].density = document.getElementById("density").value;
+        data[rowIndex].viscosity = document.getElementById("viscosity").value;
+        data[rowIndex].packaging = document.getElementById("packaging").value;
+        data[rowIndex].packSize = document.getElementById("packSize").value;
+        data[rowIndex].unit = document.getElementById("unit").value;
+        data[rowIndex].quantity = document.getElementById("quantity").value;
+        closeModal();
+        populateTable();
+      }
+
+      // Close Edit Modal
+      function closeModal() {
+        document.getElementById("editModal").style.display = "none";
+      }
+
+      // Refresh Data
+      function refreshData() {
+        data = [...originalData];
+        populateTable();
+      }
+
+      // Save Data
+      function saveData() {
+        console.log("Data saved:", data);
+      }
+
+      // Initial population
+      window.onload = populateTable;
+    </script>
+  </body>
+</html>
